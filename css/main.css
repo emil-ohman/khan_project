@@ -1,0 +1,32 @@
+html, body {
+	font-family: "Arial";
+	margin: 0px;
+	padding: 0px;
+	background-color: #efefef;
+}
+.header {
+	margin: 20px 40px 30px;
+}
+.success_message {
+	color: green;
+}
+.error_message {
+	color: red;
+}
+#editor {
+	margin: 0;
+	width: 500px;
+	height: 700px;
+	border: 1px solid #bbb;
+	float: left;
+}
+#code_area {
+	float: left;
+}
+#output_area {
+	float: left;
+	margin-left: 20px;
+}
+.clear {
+	clear: both;
+}

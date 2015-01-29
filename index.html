@@ -1,0 +1,60 @@
+<html>
+<head>
+    <title>Khan Project - Emil Öhman</title>
+    <link rel="stylesheet" type="text/css" href="css/main.css" />
+    <script src="scripts/challenger.js"></script>
+    <script src="scripts/main.js"></script>
+    <script src="scripts/esprima.js"></script>
+</head>
+<body>
+<div class="header">
+    <h1>Programming Exercise</h1>
+    <p>Create a function that, without a for loop, iterates through the 100 first numbers, checks which are even and alerts them.</p>
+</div>
+
+<!-- Sample valid code:
+function evenPrint() {
+    var i = 0;
+    while (i &lt; 100) {
+        if (i%2 === 0) {
+            alert(i);
+        }
+        i = i + 1;
+    }
+}
+-->
+<pre id="editor"></pre>
+<script type="text/javascript" charset="utf-8" src="scripts/ace-builds-1.1.8/src-noconflict/ace.js"></script>
+<script>
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/chrome");
+    editor.getSession().setMode("ace/mode/javascript");
+    editor.setShowPrintMargin(false);
+    editor.getSession().on('change', function() { submission();});
+</script>
+
+<div id="output_area"><p>
+    <b>Should contain:</b>
+        <ul id="whitelist">
+            <li>Function Declaration</li>
+            <li>Variable Declaration</li>
+        </ul>
+    <b>Should not contain:</b>
+        <ul id="blacklist">
+            <li>For Loop</li>
+        </ul>
+    <b>Structure: </b>
+        <ul>
+            <li id="structure">
+                <span>While Loop<br /></span>
+                <span>If Statement<br /></span>
+                <span>Call Expression</span>
+            </li>
+        </ul>
+    <b>Overall: </b><br />
+    <span id="overall_result"> </span>
+</p></div>
+<br class="clear"/>
+
+</body>
+</html>
