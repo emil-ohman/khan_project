@@ -1,8 +1,9 @@
 // This code is an obvious mess but I prioritized other things as the front-end was not the project's primary purpose
-// It essentially uses the API to update the colours of all criteria on the page
+// The code essentially uses the API to update the colours of all criteria on the page
 function submission() {
     var editor = ace.edit("editor");
     var code = editor.getSession().getValue();
+
     try {
         var wh_res = challenger.whitelist(["FunctionDeclaration", "VariableDeclaration"],code);
         var bl_res = challenger.blacklist(["ForStatement"],code);

@@ -1,17 +1,19 @@
 /***
 * Overview:
-*   
+*   The "challenger" API has three methods (see below) that examine input code.
+*   The input code has to be written in JavaSript, and the input parameters to the methods have to be valid Esprima expressions (see below).
+* 
 * Dependencies:
 *   esprima.js
 * 
-* Functions:
-*   1. whitelist(lst,syntax)
-*      Converts all elements in list "lst" of Esprima expressions into true if the expression exists in "syntax," otherwise false.
-*      More intuitively, it checks if each element occurs.
-*   2. blacklist(lst,syntax)
-*      Converts all elements in list "lst" of Esprima expressions into false if the expression exists in "syntax," otherwise true.
-*      More intuitively, it checks if each element does not occur.
-*   3. structure(lst,syntax)
+* Methods
+*   1. whitelist(lst,code)
+*      Converts all elements in list "lst" of Esprima expressions into true if the expression exists in "code," otherwise false.
+*      More intuitively, it checks if each element occurs in "code."
+*   2. blacklist(lst,code)
+*      Converts all elements in list "lst" of Esprima expressions into true if the expression does not exist in "code," otherwise false.
+*      More intuitively, it checks if each element does not occur in "code."
+*   3. structure(lst,code)
 *      Converts all elements in list "lst" of Esprima expressions to true if it is contained in the bodies of all expressions to its left in "lst." 
 *      More intuitively, it checks if each element is contained in the previous elements.
 * 
@@ -60,82 +62,80 @@
 ***/
 
 var challenger = (function() {
-    var boolst;
-    // Executes visitor on the object and its children (recursively).
-    function traverse(object, visitor) {
-        var key, child;
+    var bool_lst, check_lst;
 
-        visitor.call(null, object);
-        for (key in object) {
-            if (object.hasOwnProperty(key)) {
-                child = object[key];
-                if (typeof child === 'object' && child !== null) {
-                    traverse(child, visitor);
-                }
-            }
+    // Updates "check_lst" to "passed_lst" and "bool_lst" to all false. Returns "code" processed with esprima.
+    function pre_process(passed_lst, code) {
+        check_lst = passed_lst;
+        bool_lst = [];
+        for(var i = 0; i < check_lst.length; i++)
+            bool_lst.push(false);
+
+        try {
+            var syntax = esprima.parse(code);
+        } catch (err) {
+            throw "Missing challenger dependency: esprima";
         }
+        return syntax;
     }
-    function structTraverse(object, passed_boolst, lst) {
-        var key, child;
-        var boolstcopy = passed_boolst.slice(0);
 
-        for (var j = 0; j < lst.length; j++) {
-            if (object.type === lst[j] && (j === 0 || j>0 && boolstcopy[j-1] === true)) {
-                boolst[j] = true;
-                boolstcopy[j] = true;
-            }
+    // Executes visitor on the object and its children, passing a copy of "info_array" to its recursive calls.
+    function traverse(syntax, info_array, visitor) {
+        var key, child;
+        if (typeof(info_array) != 'undefined') {
+            var info_array = info_array.slice(0);
         }
-        for (key in object) {
-            if (object.hasOwnProperty(key)) {
-                child = object[key];
+        visitor.call(null, syntax, info_array);
+        for (key in syntax) {
+            if (syntax.hasOwnProperty(key)) {
+                child = syntax[key];
                 if (typeof child === 'object' && child !== null) {
-                    structTraverse(child, boolstcopy, lst);
+                    traverse(child, info_array, visitor);
                 }
             }
         }
     }
 
     return {
-        whitelist : function(lst,code) {
-            // Assumes each element is not in syntax
-            var syntax = esprima.parse(code);
-            boolst = [];
-            for(var i = 0; i < lst.length; i++)
-                boolst.push(false);
-            // Traverses the syntax in search for whitelisted types
-            traverse(syntax, function (node) {
-                for (var j = 0; j < lst.length; j++) {
-                    if (node.type === lst[j]) {
-                        boolst[j] = true;
+        // Calls pre_process() and then traverses the code looking for the desired elements
+        whitelist : function(lst, code) {
+            var syntax = pre_process(lst,code);
+            traverse(syntax, undefined, function (node, info_object) {
+                for (var j = 0; j < check_lst.length; j++) {
+                    if (node.type === check_lst[j]) {
+                        bool_lst[j] = true;
                     }
                 }
             });
-            return boolst;
+            return bool_lst;
         },
-        blacklist : function(lst,code) {
-            // Assumes each element is in syntax
-            var syntax = esprima.parse(code);
-            boolst = [];
-            for(var i = 0; i < lst.length; i++)
-                boolst.push(true);
-            // Traverses the syntax in search for blacklisted types
-            traverse(syntax, function (node) {
-                for (var j = 0; j < lst.length; j++) {
-                    if (node.type === lst[j]) {
-                        boolst[j] = false;
+        // Identical to whitelist, but ends by reversing "bool_lst"
+        blacklist : function(lst, code) {
+            var syntax = pre_process(lst,code);
+            traverse(syntax, undefined, function (node, info_object) {
+                for (var j = 0; j < check_lst.length; j++) {
+                    if (node.type === check_lst[j]) {
+                        bool_lst[j] = true;
                     }
                 }
             });
-            return boolst;
+            for (var i = 0; i < check_lst.length; i++) {
+                bool_lst[i] = !bool_lst[i];
+            }
+            return bool_lst;
         },
-        structure : function(lst,code) {
-            // Assumes each element is part of the wrong structure
-            var syntax = esprima.parse(code);
-            boolst = [];
-            for(var i = 0; i < lst.length; i++)
-                boolst.push(false);
-            structTraverse(syntax, boolst,lst);
-            return boolst;
+        // Calls pre_process() and then traverses the code, passing along an array keeping track of which elements have been visited.
+        structure : function(lst, code) {
+            var syntax = pre_process(lst,code);
+            traverse(syntax, bool_lst, function (node, bool_lst_copy) {
+                for (var j = 0; j < check_lst.length; j++) {
+                    if (node.type === check_lst[j] && (j === 0 || j>0 && bool_lst_copy[j-1] === true)) {
+                        bool_lst[j] = true;
+                        bool_lst_copy[j] = true;
+                    }
+                }
+            });
+            return bool_lst;
         }
     }
 })();
